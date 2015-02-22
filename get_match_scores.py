@@ -1,26 +1,20 @@
 #!/usr/bin/env python3
-'''for each query and each mRNA read, compute their a similarity score . This program reports a summary.'''
+'''for each query and each mRNA read, compute their a similarity score. This program reports a summary.'''
 
 from __future__ import print_function, division
 
-from Bio import pairwise2
-from Bio import SeqIO
-import string
+from Bio import pairwise2, SeqIO
 import csv
 import time
 import glob
 import itertools
 import os.path
 import json
-import sys
 
-if len(sys.argv) > 1:
-    progress_filename = sys.argv[1]
-else:
-    progress_filename = 'progress.json'
+progress_filename = 'progress.json'
 
 def print_scores(queries):
-    '''for each query, print the number of matches found for each score'''
+    '''for each query, print the number of matches found for each score. It's like a histogram.'''
     # column widths
     scores_widths = {}
     for query in queries:
@@ -29,17 +23,19 @@ def print_scores(queries):
 
     # header row
     max_name_length = max(len(query['name']) for query in queries)
-    print('{0:{1}} {2:<8}'.format('gene', 2+max_name_length, '(len)'), end='')
+    print('{0:{1}} {2:<8}'.format('gene', 2+max_name_length, '(len)'), end='') #arcane format syntax for python2.6-compatibility
     for score, width in sorted(scores_widths.items()):
         print('{0:>{1}} '.format(score, width), end='')
     print('')
 
     # query rows
     for query in queries:
+        # print name and length
         print('{0:{1}} {2:<8}'.format(query['name'],
                                       2+max_name_length,
                                       '({0})'.format(len(query['seq']))),
               end='')
+        # print match-score frequencies
         for score, width in sorted(scores_widths.items()):
             print('{0:>{1}} '.format(query['score_frequencies'].get(score, '.'),
                                      width),
@@ -57,6 +53,7 @@ def store_progress(queries, num_reads_checked, start_time):
 
 
 def local_similarity(s1, s2):
+    '''Compute a match score. When a match score sets a new record, print it.'''
     s1, s2 = sorted((s1, s2), key=len)
     score = 0
     read_length = len(s1)
